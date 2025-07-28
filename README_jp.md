@@ -58,7 +58,7 @@
 
 1. **リポジトリをクローン：**
 ```bash
-git clone git@github.com:cruzyjapan/Gemini-CLI-UI.git
+git clone https://github.com/cruzyjapan/Gemini-CLI-UI.git
 cd geminicliui
 ```
 
