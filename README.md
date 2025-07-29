@@ -59,7 +59,7 @@ A desktop and mobile UI for [Gemini CLI](https://github.com/google-gemini/gemini
 1. **Clone the repository:**
 ```bash
 git clone https://github.com/cruzyjapan/Gemini-CLI-UI.git
-cd geminicliui
+cd Gemini-CLI-UI
 ```
 
 2. **Install dependencies:**
