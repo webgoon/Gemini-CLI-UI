@@ -59,7 +59,7 @@
 1. **リポジトリをクローン：**
 ```bash
 git clone https://github.com/cruzyjapan/Gemini-CLI-UI.git
-cd geminicliui
+cd Gemini-CLI-UI
 ```
 
 2. **依存関係をインストール：**
