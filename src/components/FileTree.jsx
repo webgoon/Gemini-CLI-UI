@@ -14,12 +14,57 @@ function FileTree({ selectedProject }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [viewMode, setViewMode] = useState('detailed'); // 'simple', 'detailed', 'compact'
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
   useEffect(() => {
     if (selectedProject) {
       fetchFiles();
     }
   }, [selectedProject]);
+
+  // Auto-refresh when files are created/modified
+  useEffect(() => {
+    if (!selectedProject) return;
+
+    // Set up auto-refresh on file operations
+    const handleFileOperation = (event) => {
+      // Custom event triggered when files are created/modified
+      if (event.detail?.projectName === selectedProject.name) {
+        console.log('File operation detected, refreshing file tree...');
+        fetchFiles();
+      }
+    };
+
+    // Listen for file operation events
+    window.addEventListener('file-operation', handleFileOperation);
+    
+    // Also refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && selectedProject) {
+        const timeSinceRefresh = Date.now() - lastRefresh;
+        // Only refresh if more than 2 seconds have passed
+        if (timeSinceRefresh > 2000) {
+          fetchFiles();
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Set up periodic refresh (every 5 seconds if panel is active)
+    const intervalId = setInterval(() => {
+      const filesPanel = document.querySelector('[data-panel="files"]');
+      if (filesPanel && !filesPanel.classList.contains('hidden')) {
+        fetchFiles();
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('file-operation', handleFileOperation);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
+    };
+  }, [selectedProject, lastRefresh]);
 
   // Load view mode preference from localStorage
   useEffect(() => {
@@ -43,6 +88,7 @@ function FileTree({ selectedProject }) {
       
       const data = await response.json();
       setFiles(data);
+      setLastRefresh(Date.now());
     } catch (error) {
       console.error('❌ Error fetching files:', error);
       setFiles([]);
@@ -50,6 +96,19 @@ function FileTree({ selectedProject }) {
       setLoading(false);
     }
   };
+
+  // Expose refresh function globally for other components to trigger
+  useEffect(() => {
+    if (selectedProject) {
+      window.refreshFileTree = () => {
+        console.log('Manual file tree refresh triggered');
+        fetchFiles();
+      };
+    }
+    return () => {
+      delete window.refreshFileTree;
+    };
+  }, [selectedProject]);
 
   const toggleDirectory = (path) => {
     const newExpanded = new Set(expandedDirs);

@@ -501,17 +501,24 @@ function Sidebar({
               <FolderPlus className="w-4 h-4" />
               Create New Project
             </div>
-            <Input
-              value={newProjectPath}
-              onChange={(e) => setNewProjectPath(e.target.value)}
-              placeholder="/path/to/project or relative/path"
-              className="text-sm focus:ring-2 focus:ring-primary/20"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') createNewProject();
-                if (e.key === 'Escape') cancelNewProject();
-              }}
-            />
+            <div className="space-y-2">
+              <Input
+                value={newProjectPath}
+                onChange={(e) => setNewProjectPath(e.target.value)}
+                placeholder="/path/to/project or new/folder/name"
+                className="text-sm focus:ring-2 focus:ring-primary/20"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') createNewProject();
+                  if (e.key === 'Escape') cancelNewProject();
+                }}
+              />
+              {newProjectPath.trim() && (
+                <div className="text-xs text-muted-foreground italic">
+                  💡 Folder will be created if it doesn't exist
+                </div>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -555,17 +562,24 @@ function Sidebar({
               </div>
               
               <div className="space-y-3">
-                <Input
-                  value={newProjectPath}
-                  onChange={(e) => setNewProjectPath(e.target.value)}
-                  placeholder="/path/to/project or relative/path"
-                  className="text-sm h-10 rounded-md focus:border-primary transition-colors"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') createNewProject();
-                    if (e.key === 'Escape') cancelNewProject();
-                  }}
-                />
+                <div>
+                  <Input
+                    value={newProjectPath}
+                    onChange={(e) => setNewProjectPath(e.target.value)}
+                    placeholder="/path/to/project or new/folder/name"
+                    className="text-sm h-10 rounded-md focus:border-primary transition-colors"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') createNewProject();
+                      if (e.key === 'Escape') cancelNewProject();
+                    }}
+                  />
+                  {newProjectPath.trim() && (
+                    <div className="text-xs text-muted-foreground italic mt-2">
+                      💡 Folder will be created if it doesn't exist
+                    </div>
+                  )}
+                </div>
                 
                 <div className="flex gap-2">
                   <Button

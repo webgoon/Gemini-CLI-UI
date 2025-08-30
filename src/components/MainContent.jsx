@@ -287,7 +287,7 @@ function MainContent({
             autoScrollToBottom={autoScrollToBottom}
           />
         </div>
-        <div className={`h-full overflow-hidden ${activeTab === 'files' ? 'block' : 'hidden'}`}>
+        <div className={`h-full overflow-hidden ${activeTab === 'files' ? 'block' : 'hidden'}`} data-panel="files">
           <FileTree selectedProject={selectedProject} />
         </div>
         <div className={`h-full overflow-hidden ${activeTab === 'shell' ? 'block' : 'hidden'}`}>

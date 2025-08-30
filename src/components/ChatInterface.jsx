@@ -21,7 +21,7 @@ import ReactMarkdown from 'react-markdown';
 import { useDropzone } from 'react-dropzone';
 import TodoList from './TodoList';
 import GeminiLogo from './GeminiLogo.jsx';
-
+import { EnhancedMessageRenderer } from './EnhancedMessageRenderer';
 import GeminiStatus from './GeminiStatus';
 import { MicButton } from './MicButton.jsx';
 import { api } from '../utils/api';
@@ -109,17 +109,17 @@ const MessageComponent = memo(({ message, index, prevMessage, createDiff, onFile
         /* Gemini/Error messages on the left */
         <div className="w-full">
           {!isGrouped && (
-            <div className="flex items-center space-x-3 mb-2">
+            <div className="flex items-center space-x-2 mb-1">
               {message.type === 'error' ? (
-                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">
+                <div className="w-7 h-7 bg-red-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">
                   !
                 </div>
               ) : (
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-0.5">
                   <GeminiLogo className="w-full h-full" />
                 </div>
               )}
-              <div className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="text-xs font-medium text-gray-900 dark:text-white">
                 {message.type === 'error' ? 'Error' : 'Gemini'}
               </div>
             </div>
@@ -939,42 +939,10 @@ const MessageComponent = memo(({ message, index, prevMessage, createDiff, onFile
                   </button>
                 )}
                 {message.type === 'assistant' ? (
-                  <div className={`prose prose-sm max-w-none dark:prose-invert prose-gray [&_code]:!bg-transparent [&_code]:!p-0 ${message.type === 'error' ? 'select-text cursor-text' : ''}`} style={{ contain: 'layout' }}>
-                    <ReactMarkdown
-                      components={{
-                        code: ({node, inline, className, children, ...props}) => {
-                          return inline ? (
-                            <strong className="text-blue-600 dark:text-blue-400 font-bold not-prose" {...props}>
-                              {children}
-                            </strong>
-                          ) : (
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg overflow-hidden my-2">
-                              <code className="text-gray-800 dark:text-gray-200 text-sm font-mono block whitespace-pre-wrap break-words" {...props}>
-                                {children}
-                              </code>
-                            </div>
-                          );
-                        },
-                        blockquote: ({children}) => (
-                          <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-400 my-2">
-                            {children}
-                          </blockquote>
-                        ),
-                        a: ({href, children}) => (
-                          <a href={href} className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">
-                            {children}
-                          </a>
-                        ),
-                        p: ({children}) => (
-                          <p className="mb-2 last:mb-0">
-                            {children}
-                          </p>
-                        )
-                      }}
-                    >
-                      {String(message.content || '')}
-                    </ReactMarkdown>
-                  </div>
+                  <EnhancedMessageRenderer 
+                    content={message.content} 
+                    isDarkMode={document.documentElement.classList.contains('dark')}
+                  />
                 ) : (
                   <div className={`whitespace-pre-wrap ${message.type === 'error' ? 'select-all cursor-text pr-16' : ''}`}>
                     {message.content}
@@ -1426,7 +1394,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         setChatMessages(prev => [...prev, {
           id: `system-${Date.now()}`,
           type: 'system',
-          content: '⚙️ 設定が更新されました。',
+          content: '⚙️ Settings updated.',
           timestamp: new Date().toISOString()
         }]);
       }
@@ -1536,6 +1504,20 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
                   toolId: part.id,
                   toolResult: null // Will be updated when result comes in
                 }]);
+                
+                // Trigger file refresh for file-related operations
+                if (['Write', 'write_file', 'Edit', 'MultiEdit', 'Create', 'Delete'].includes(part.name)) {
+                  console.log(`File operation detected: ${part.name}`);
+                  // Dispatch custom event for FileTree to refresh
+                  setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('file-operation', {
+                      detail: { 
+                        toolName: part.name,
+                        projectName: selectedProject?.name
+                      }
+                    }));
+                  }, 500); // Small delay to ensure file operation completes
+                }
               } else if (part.type === 'text' && part.text?.trim()) {
                 // Add regular text message
                 setChatMessages(prev => [...prev, {
@@ -2301,7 +2283,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             <div className="w-full">
               <div className="flex items-center space-x-3 mb-2">
                 <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0">
-                  C
+                  G
                 </div>
                 <div className="text-sm font-medium text-gray-900 dark:text-white">Gemini</div>
                 {/* Abort button removed - functionality not yet implemented at backend */}

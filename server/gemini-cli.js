@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import sessionManager from './sessionManager.js';
+import GeminiResponseHandler from './gemini-response-handler.js';
 
 let activeGeminiProcesses = new Map(); // Track active processes by session ID
 
@@ -238,6 +239,16 @@ async function spawnGemini(command, options = {}, ws) {
       sessionManager.addMessage(capturedSessionId, 'user', command);
     }
     
+    // Create response handler for intelligent buffering
+    let responseHandler;
+    if (ws) {
+      responseHandler = new GeminiResponseHandler(ws, {
+        partialDelay: 300,
+        maxWaitTime: 1500,
+        minBufferSize: 30
+      });
+    }
+    
     // Handle stdout (Gemini outputs plain text)
     let outputBuffer = '';
     
@@ -251,12 +262,13 @@ async function spawnGemini(command, options = {}, ws) {
       // Filter out debug messages and system messages
       const lines = rawOutput.split('\n');
       const filteredLines = lines.filter(line => {
-        // Skip debug messages
+        // Skip debug messages and "Loaded cached credentials"
         if (line.includes('[DEBUG]') || 
             line.includes('Flushing log events') || 
             line.includes('Clearcut response') ||
             line.includes('[MemoryDiscovery]') ||
-            line.includes('[BfsFileSearch]')) {
+            line.includes('[BfsFileSearch]') ||
+            line.includes('Loaded cached credentials')) {
           return false;
         }
         return true;
@@ -270,14 +282,19 @@ async function spawnGemini(command, options = {}, ws) {
         // Accumulate the full response
         fullResponse += (fullResponse ? '\n' : '') + filteredOutput;
         
-        // Send the filtered output as a message
-        ws.send(JSON.stringify({
-          type: 'gemini-response',
-          data: {
-            type: 'message',
-            content: filteredOutput
-          }
-        }));
+        // Use response handler for intelligent buffering
+        if (responseHandler) {
+          responseHandler.processData(filteredOutput);
+        } else {
+          // Fallback to direct sending
+          ws.send(JSON.stringify({
+            type: 'gemini-response',
+            data: {
+              type: 'message',
+              content: filteredOutput
+            }
+          }));
+        }
       }
       
       // For new sessions, create a session ID
@@ -311,10 +328,11 @@ async function spawnGemini(command, options = {}, ws) {
       const errorMsg = data.toString();
       // Debug - Raw Gemini stderr
       
-      // Filter out deprecation warnings
+      // Filter out deprecation warnings and "Loaded cached credentials" message
       if (errorMsg.includes('[DEP0040]') || 
           errorMsg.includes('DeprecationWarning') ||
-          errorMsg.includes('--trace-deprecation')) {
+          errorMsg.includes('--trace-deprecation') ||
+          errorMsg.includes('Loaded cached credentials')) {
         // Log but don't send to client
         // Debug - Gemini CLI warning (suppressed)
         return;
@@ -331,6 +349,12 @@ async function spawnGemini(command, options = {}, ws) {
     geminiProcess.on('close', async (code) => {
       // console.log(`Gemini CLI process exited with code ${code}`);
       clearTimeout(timeout);
+      
+      // Flush any remaining buffered content
+      if (responseHandler) {
+        responseHandler.forceFlush();
+        responseHandler.destroy();
+      }
       
       // Clean up process reference
       const finalSessionId = capturedSessionId || sessionId || processKey;

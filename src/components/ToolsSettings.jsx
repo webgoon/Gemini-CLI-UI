@@ -51,6 +51,7 @@ function ToolsSettings({ isOpen, onClose }) {
     'Bash(git diff:*)',
     'Bash(git status:*)',
     'Write',
+    'write_file',
     'Read',
     'Edit',
     'Glob',
