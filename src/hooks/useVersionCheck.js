@@ -7,6 +7,13 @@ export const useVersionCheck = (owner, repo) => {
   const [latestVersion, setLatestVersion] = useState(null);
 
   useEffect(() => {
+    // Version check is disabled - always return no update available
+    // This prevents showing "Update Available" messages
+    setUpdateAvailable(false);
+    setLatestVersion(null);
+    
+    // Original version check code (disabled):
+    /*
     const checkVersion = async () => {
       try {
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
@@ -33,6 +40,7 @@ export const useVersionCheck = (owner, repo) => {
     checkVersion();
     const interval = setInterval(checkVersion, 5 * 60 * 1000); // Check every 5 minutes
     return () => clearInterval(interval);
+    */
   }, [owner, repo]);
 
   return { updateAvailable, latestVersion, currentVersion: version };
